@@ -1,0 +1,27 @@
+{
+  "TableName": "Asset",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "symbol",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "name",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "symbol",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "name",
+      "KeyType": "RANGE"
+    }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}
