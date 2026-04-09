@@ -4,20 +4,12 @@
     {
       "AttributeName": "symbol",
       "AttributeType": "S"
-    },
-    {
-      "AttributeName": "name",
-      "AttributeType": "S"
     }
   ],
   "KeySchema": [
     {
       "AttributeName": "symbol",
       "KeyType": "HASH"
-    },
-    {
-      "AttributeName": "name",
-      "KeyType": "RANGE"
     }
   ],
   "ProvisionedThroughput": {

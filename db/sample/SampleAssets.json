@@ -1,0 +1,49 @@
+{
+  "Asset": [
+    {
+      "PutRequest": {
+        "Item": {
+          "symbol": {
+            "S": "AAPL"
+          },
+          "name": {
+            "S": "Apple Inc."
+          },
+          "price": {
+            "S": "189.12"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "symbol": {
+            "S": "MSFT"
+          },
+          "name": {
+            "S": "Microsoft"
+          },
+          "price": {
+            "S": "402.33"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "symbol": {
+            "S": "TSLA"
+          },
+          "name": {
+            "S": "Tesla"
+          },
+          "price": {
+            "S": "215.40"
+          }
+        }
+      }
+    }
+  ]
+}
