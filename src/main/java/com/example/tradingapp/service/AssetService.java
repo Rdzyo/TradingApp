@@ -1,6 +1,6 @@
 package com.example.tradingapp.service;
 
-import com.example.tradingapp.entity.Asset;
+import com.example.tradingapp.model.Asset;
 
 import java.util.List;
 

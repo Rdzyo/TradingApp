@@ -1,6 +1,6 @@
 package com.example.tradingapp.controller;
 
-import com.example.tradingapp.entity.Asset;
+import com.example.tradingapp.model.Asset;
 import com.example.tradingapp.service.AssetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,5 +18,4 @@ public class AssetController {
     public List<Asset> getAssets() {
         return assetService.getAvailableAssets();
     }
-
 }
