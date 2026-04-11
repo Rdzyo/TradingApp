@@ -1,29 +1,31 @@
-package com.example.tradingapp.entity;
+package com.example.tradingapp.model;
 
+import com.example.tradingapp.dto.OrderStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @DynamoDbBean
 public class Order {
     private UUID orderId;
-    //Could be enum
-    private String status;
-    private int itemsReceived;
+    private UUID userId;
+    private OrderStatus status;
+    List<OrderAsset> assets;
 
     @DynamoDbPartitionKey
     public UUID getOrderId() {
         return this.orderId;
-    }
-
-    @DynamoDbSortKey
-    public String status() {
-        return this.status;
     }
 }

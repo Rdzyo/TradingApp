@@ -1,7 +1,7 @@
 package com.example.tradingapp.repository;
 
 
-import com.example.tradingapp.entity.Asset;
+import com.example.tradingapp.model.Asset;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -14,10 +14,12 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
-public class AssetRepositoryImpl implements AssetPort {
+public class AssetRepository implements AssetPort {
 
     private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
 
+    //Could be cached to not overload the db too much with scan (maybe scheduled scan if a lot of assets?)
+    //Improvement: return it as page not list
     @Override
     public List<Asset> getAvailableAssets() {
         return getTable().scan().items().stream().toList();
@@ -25,7 +27,7 @@ public class AssetRepositoryImpl implements AssetPort {
 
     @Override
     public Optional<Asset> getAsset(String symbol) {
-        return Optional.of(getTable().getItem(Key.builder()
+        return Optional.ofNullable(getTable().getItem(Key.builder()
                 .partitionValue(symbol)
                 .build()));
     }

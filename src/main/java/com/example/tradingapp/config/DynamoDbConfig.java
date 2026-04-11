@@ -21,6 +21,9 @@ public class DynamoDbConfig {
     @Value("${AWS_SECRET_ACCESS_KEY}")
     private String awsSecretAccessKey;
 
+    @Value("${AWS_REGION}")
+    private String region;
+
     @Value("${dynamodb.local.url}")
     private String localUrl;
 
@@ -29,7 +32,7 @@ public class DynamoDbConfig {
         return DynamoDbClient.builder()
                 .endpointOverride(URI.create(localUrl))
                 .httpClient(UrlConnectionHttpClient.builder().build())
-                .region(Region.US_WEST_1)
+                .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsAccessKey, awsSecretAccessKey)))
                 .overrideConfiguration(o -> o.retryStrategy(b -> b.maxAttempts(5)))
                 .build();

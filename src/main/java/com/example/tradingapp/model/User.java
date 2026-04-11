@@ -1,4 +1,4 @@
-package com.example.tradingapp.entity;
+package com.example.tradingapp.model;
 
 
 import com.example.tradingapp.dto.PortfolioDto;
