@@ -7,8 +7,13 @@ import com.example.tradingapp.dto.result.OrderResult;
 import com.example.tradingapp.exception.NotFoundException;
 import com.example.tradingapp.model.Order;
 import com.example.tradingapp.model.OrderAsset;
-import com.example.tradingapp.repository.AssetPort;
-import com.example.tradingapp.repository.OrderPort;
+import com.example.tradingapp.model.Portfolio;
+import com.example.tradingapp.model.User;
+import com.example.tradingapp.port.AssetPort;
+import com.example.tradingapp.port.OrderPort;
+import com.example.tradingapp.port.PortfolioPort;
+import com.example.tradingapp.repository.OrderRepository;
+import com.example.tradingapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -17,8 +22,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import static com.example.tradingapp.util.CalculationUtil.calculateAveragePrice;
+import static com.example.tradingapp.util.CalculationUtil.calculateItemsInOrder;
 import static com.example.tradingapp.validation.OrderValidator.validateForDuplicatedAssets;
 
 @Service
@@ -28,6 +37,9 @@ public class OrderServiceImpl implements OrderService {
 
     private final AssetPort assetPort;
     private final OrderPort orderPort;
+    private final PortfolioPort portfolioPort;
+    private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
 
     @Override
     public OrderResult placeOrder(PlaceOrderCommand command) {
@@ -36,22 +48,55 @@ public class OrderServiceImpl implements OrderService {
         var assetsWithPrice = addPriceToAssets(assets);
         var userId = command.userId();
         var order = setOrder(userId, assetsWithPrice);
-        orderPort.createOrder(order);
+        orderRepository.createOrder(order);
         var itemsReceived = calculateItemsInOrder(assetsWithPrice);
         return preparePlaceOrderResponse(order.getOrderId(), itemsReceived);
     }
 
     @Override
     public void completeOrder(UUID orderId) {
-        orderPort.completeOrder(orderId);
+        processOrder(orderId);
+        orderRepository.updateOrder(orderId, OrderStatus.COMPLETED);
+    }
+
+    //Simple process without any validations to reject the order
+    //Would suggest doing it in some scheduler depending on use-cases and process orders in bulk
+    //Probably could be written better - brain fried
+    private void processOrder(UUID orderId) {
+        var order = orderPort.getOrder(orderId);
+        List<Portfolio> userPortfolio = portfolioPort.getUserPortfolio(order.getUserId().toString());
+        if (userPortfolio == null || userPortfolio.isEmpty()) {
+            List<Portfolio> portfolioList = new ArrayList<>();
+            order.getAssets().forEach(
+                    orderAsset -> portfolioList.add(
+                            Portfolio.builder()
+                                    .symbol(orderAsset.getSymbol())
+                                    .totalQuantity(orderAsset.getQuantity())
+                                    .averagePrice(orderAsset.getPrice())
+                                    .build()));
+            userRepository.updateUserPortfolio(setUser(order.getUserId(), portfolioList));
+        } else {
+            var portfolioMap = userPortfolio.stream()
+                    .collect(Collectors.toMap(Portfolio::getSymbol, portfolio -> portfolio));
+            order.getAssets().forEach(orderAsset -> mergePortfolioAsset(portfolioMap, orderAsset));
+            userPortfolio = portfolioMap.values().stream().toList();
+            userRepository.updateUserPortfolio(setUser(order.getUserId(), userPortfolio));
+        }
     }
 
     private Order setOrder(UUID userId, List<OrderAsset> assets) {
         return Order.builder()
                 .orderId(UUID.randomUUID())
-        .userId(userId)
+                .userId(userId)
                 .status(OrderStatus.ACCEPTED)
                 .assets(assets)
+                .build();
+    }
+
+    private User setUser(UUID userId, List<Portfolio> userPortfolio) {
+        return User.builder()
+                .userId(userId)
+                .portfolio(userPortfolio)
                 .build();
     }
 
@@ -66,7 +111,9 @@ public class OrderServiceImpl implements OrderService {
                             .symbol(asset.symbol())
                             .quantity(asset.quantity())
                             .price(assetPort.getAsset(asset.symbol())
-                                    .orElseThrow(() -> new NotFoundException(asset.symbol())).getPrice())
+                                    .orElseThrow(() -> new NotFoundException(
+                                            String.format("Asset with symbol %s does not exist", asset.symbol())))
+                                    .getPrice())
                             .build()));
         } catch (NotFoundException e) {
             log.info(e.getMessage());
@@ -75,8 +122,29 @@ public class OrderServiceImpl implements OrderService {
         return assetsWithPrice;
     }
 
-    private int calculateItemsInOrder(List<OrderAsset> assets) {
-        return assets.stream().map(OrderAsset::getQuantity).reduce(Integer::sum).get();
+    private void mergePortfolioAsset(Map<String, Portfolio> portfolio, OrderAsset orderAsset) {
+        var symbol = orderAsset.getSymbol();
+        if (portfolio.containsKey(symbol)) {
+            var portfolioAsset = portfolio.get(symbol);
+            var updatedPortfolioAsset = Portfolio.builder()
+                    .symbol(symbol)
+                    .totalQuantity(portfolioAsset.getTotalQuantity() + orderAsset.getQuantity())
+                    .averagePrice(
+                            calculateAveragePrice(
+                                    portfolioAsset.getAveragePrice(),
+                                    portfolioAsset.getTotalQuantity(),
+                                    orderAsset.getPrice(),
+                                    orderAsset.getQuantity()))
+                    .build();
+            portfolio.replace(symbol, updatedPortfolioAsset);
+        } else {
+            var newPortfolioAsset = Portfolio.builder()
+                    .symbol(orderAsset.getSymbol())
+                    .totalQuantity(orderAsset.getQuantity())
+                    .averagePrice(orderAsset.getPrice())
+                    .build();
+            portfolio.put(symbol, newPortfolioAsset);
+        }
     }
 
     private OrderResult preparePlaceOrderResponse(UUID orderId, int itemsReceived) {

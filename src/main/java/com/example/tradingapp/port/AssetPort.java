@@ -1,4 +1,4 @@
-package com.example.tradingapp.repository;
+package com.example.tradingapp.port;
 
 import com.example.tradingapp.model.Asset;
 
