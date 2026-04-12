@@ -4,6 +4,14 @@
     {
       "AttributeName": "orderId",
       "AttributeType": "S"
+    },
+    {
+      "AttributeName": "status",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "userId",
+      "AttributeType": "S"
     }
   ],
   "KeySchema": [
@@ -12,8 +20,30 @@
       "KeyType": "HASH"
     }
   ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "userIdStatusIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "userId",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "status",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      },
+      "ProvisionedThroughput": {
+        "ReadCapacityUnits": 10,
+        "WriteCapacityUnits": 5
+      }
+    }
+  ],
   "ProvisionedThroughput": {
-    "ReadCapacityUnits": 5,
+    "ReadCapacityUnits": 10,
     "WriteCapacityUnits": 5
   }
 }

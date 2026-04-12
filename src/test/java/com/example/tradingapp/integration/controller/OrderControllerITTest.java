@@ -4,6 +4,7 @@ import com.example.tradingapp.dto.OrderStatus;
 import com.example.tradingapp.integration.BaseITTest;
 import com.example.tradingapp.model.Asset;
 import com.example.tradingapp.model.Order;
+import com.example.tradingapp.model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -26,6 +27,8 @@ import static com.example.tradingapp.testutil.AssetTestUtil.asset;
 import static com.example.tradingapp.testutil.OrderTestUtil.ORDER_TABLE;
 import static com.example.tradingapp.testutil.OrderTestUtil.orderAccepted;
 import static com.example.tradingapp.testutil.OrderTestUtil.placeOrderCommandJson;
+import static com.example.tradingapp.testutil.UserTestUtil.USER_TABLE;
+import static com.example.tradingapp.testutil.UserTestUtil.basicUser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -94,18 +97,31 @@ public class OrderControllerITTest extends BaseITTest {
 
     @Test
     void completeOrderShouldSuccessfullyUpdateOrderToCompletedStatus() throws Exception {
-        var table = getOrderTable();
+        //given
+        var orderTable = getOrderTable();
         var orderId = UUID.randomUUID();
-        table.putItem(orderAccepted(orderId));
+        var userId = UUID.randomUUID();
+        var order = orderAccepted(orderId, userId);
+        orderTable.putItem(order);
+        getUserTable().putItem(basicUser(userId));
 
         mockMvc.perform(put("/order/{orderId}", orderId))
                 .andExpect(status().isNoContent());
 
-        var completedOrder = table.getItem(Key.builder()
+        var completedOrder = orderTable.getItem(Key.builder()
                                         .partitionValue(AttributeValue.fromS(orderId.toString()))
                                         .build());
 
         assertEquals(OrderStatus.COMPLETED, completedOrder.getStatus());
+    }
+
+    @Test
+    void completeOrderShouldReturn404IfUserDoesNotExist() throws Exception {
+        var order = orderAccepted(UUID.randomUUID(), UUID.randomUUID());
+        getOrderTable().putItem(order);
+
+        mockMvc.perform(put("/order/{orderId}", order.getOrderId()))
+                .andExpect(status().isNotFound());
     }
 
     private DynamoDbTable<Asset> getAssetTable() {
@@ -114,5 +130,9 @@ public class OrderControllerITTest extends BaseITTest {
 
     private DynamoDbTable<Order> getOrderTable() {
         return dynamoDbEnhancedClient.table(ORDER_TABLE, TableSchema.fromBean(Order.class));
+    }
+
+    private DynamoDbTable<User> getUserTable() {
+        return dynamoDbEnhancedClient.table(USER_TABLE, TableSchema.fromBean(User.class));
     }
 }

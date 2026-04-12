@@ -1,7 +1,7 @@
 package com.example.tradingapp.service;
 
 import com.example.tradingapp.model.Asset;
-import com.example.tradingapp.repository.AssetPort;
+import com.example.tradingapp.port.AssetPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

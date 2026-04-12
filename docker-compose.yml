@@ -29,4 +29,5 @@ services:
     command:
       '-c "for f in /tmp/dynamo/*.json; do aws dynamodb create-table --endpoint-url "http://dynamodb-local:8000" --cli-input-json file://"$${f#./}"; done
       && cd /tmp/dynamo/sample 
-      && aws dynamodb batch-write-item --endpoint-url "http://dynamodb-local:8000" --request-items file://SampleAssets.json"'
+      && aws dynamodb batch-write-item --endpoint-url "http://dynamodb-local:8000" --request-items file://SampleAssets.json
+      && aws dynamodb batch-write-item --endpoint-url "http://dynamodb-local:8000" --request-items file://SampleUsers.json"'

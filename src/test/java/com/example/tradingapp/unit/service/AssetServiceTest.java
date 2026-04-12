@@ -1,6 +1,6 @@
 package com.example.tradingapp.unit.service;
 
-import com.example.tradingapp.repository.AssetPort;
+import com.example.tradingapp.port.AssetPort;
 import com.example.tradingapp.service.AssetServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
