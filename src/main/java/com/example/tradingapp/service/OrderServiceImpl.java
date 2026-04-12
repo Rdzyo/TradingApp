@@ -61,7 +61,6 @@ public class OrderServiceImpl implements OrderService {
 
     //Simple process without any validations to reject the order
     //Would suggest doing it in some scheduler depending on use-cases and process orders in bulk
-    //Probably could be written better - brain fried
     private void processOrder(UUID orderId) {
         var order = orderPort.getOrder(orderId);
         List<Portfolio> userPortfolio = portfolioPort.getUserPortfolio(order.getUserId().toString());
@@ -69,13 +68,10 @@ public class OrderServiceImpl implements OrderService {
             List<Portfolio> portfolioList = new ArrayList<>();
             order.getAssets().forEach(
                     orderAsset -> portfolioList.add(
-                            Portfolio.builder()
-                                    .symbol(orderAsset.getSymbol())
-                                    .totalQuantity(orderAsset.getQuantity())
-                                    .averagePrice(orderAsset.getPrice())
-                                    .build()));
+                            setUpPortfolio(orderAsset.getSymbol(), orderAsset.getQuantity(), orderAsset.getPrice())));
             userRepository.updateUserPortfolio(setUser(order.getUserId(), portfolioList));
         } else {
+            //Probably could be written better, would have to spend more time with this lambda
             var portfolioMap = userPortfolio.stream()
                     .collect(Collectors.toMap(Portfolio::getSymbol, portfolio -> portfolio));
             order.getAssets().forEach(orderAsset -> mergePortfolioAsset(portfolioMap, orderAsset));
@@ -126,23 +122,16 @@ public class OrderServiceImpl implements OrderService {
         var symbol = orderAsset.getSymbol();
         if (portfolio.containsKey(symbol)) {
             var portfolioAsset = portfolio.get(symbol);
-            var updatedPortfolioAsset = Portfolio.builder()
-                    .symbol(symbol)
-                    .totalQuantity(portfolioAsset.getTotalQuantity() + orderAsset.getQuantity())
-                    .averagePrice(
-                            calculateAveragePrice(
-                                    portfolioAsset.getAveragePrice(),
-                                    portfolioAsset.getTotalQuantity(),
-                                    orderAsset.getPrice(),
-                                    orderAsset.getQuantity()))
-                    .build();
+            var totalQuantity = portfolioAsset.getTotalQuantity() + orderAsset.getQuantity();
+            var avgPrice = calculateAveragePrice(
+                    portfolioAsset.getAveragePrice(),
+                    portfolioAsset.getTotalQuantity(),
+                    orderAsset.getPrice(),
+                    orderAsset.getQuantity());
+            var updatedPortfolioAsset = setUpPortfolio(portfolioAsset.getSymbol(), totalQuantity, avgPrice);
             portfolio.replace(symbol, updatedPortfolioAsset);
         } else {
-            var newPortfolioAsset = Portfolio.builder()
-                    .symbol(orderAsset.getSymbol())
-                    .totalQuantity(orderAsset.getQuantity())
-                    .averagePrice(orderAsset.getPrice())
-                    .build();
+            var newPortfolioAsset = setUpPortfolio(orderAsset.getSymbol(), orderAsset.getQuantity(), orderAsset.getPrice());
             portfolio.put(symbol, newPortfolioAsset);
         }
     }
@@ -152,6 +141,14 @@ public class OrderServiceImpl implements OrderService {
                 .orderId(orderId)
                 .status(OrderStatus.ACCEPTED.name)
                 .itemsReceived(itemsReceived)
+                .build();
+    }
+
+    private Portfolio setUpPortfolio(String symbol, int totalQuantity, Double avgPrice) {
+        return Portfolio.builder()
+                .symbol(symbol)
+                .totalQuantity(totalQuantity)
+                .averagePrice(avgPrice)
                 .build();
     }
 }

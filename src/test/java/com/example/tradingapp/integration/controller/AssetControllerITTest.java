@@ -76,6 +76,8 @@ public class AssetControllerITTest extends BaseITTest {
         table.putItem(asset1);
         table.putItem(asset2);
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> verify(assetPriceScheduler, times(1)).changeAssetPriceTask());
+        //Not ideal, but the scheduler's task needs a second to update values for successful test
+        Thread.sleep(Duration.ofSeconds(1));
 
         //then
         mockMvc.perform(get("/assets"))
