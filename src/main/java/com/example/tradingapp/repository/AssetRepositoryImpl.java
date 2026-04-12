@@ -8,6 +8,8 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.BatchWriteItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.WriteBatch;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +32,20 @@ public class AssetRepositoryImpl implements AssetRepository {
         return Optional.ofNullable(getTable().getItem(Key.builder()
                 .partitionValue(symbol)
                 .build()));
+    }
+
+    @Override
+    public void updateAssetList(List<Asset> assets) {
+        var batchRequestBuilder = BatchWriteItemEnhancedRequest.builder();
+        for(Asset asset : assets) {
+            batchRequestBuilder
+                    .addWriteBatch(WriteBatch.builder(Asset.class)
+                            .mappedTableResource(getTable())
+                    .addPutItem(asset)
+                    .build());
+        }
+        dynamoDbEnhancedClient.batchWriteItem(
+                batchRequestBuilder.build());
     }
 
     private DynamoDbTable<Asset> getTable() {

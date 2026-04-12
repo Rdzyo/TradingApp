@@ -9,4 +9,5 @@ public interface AssetRepository {
 
     List<Asset> getAvailableAssets();
     Optional<Asset> getAsset(String symbol);
+    void updateAssetList(List<Asset> assets);
 }
