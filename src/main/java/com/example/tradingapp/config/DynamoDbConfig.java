@@ -9,6 +9,8 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.LimitExceededException;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughputExceededException;
 
 import java.net.URI;
 
@@ -34,7 +36,11 @@ public class DynamoDbConfig {
                 .httpClient(UrlConnectionHttpClient.builder().build())
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(awsAccessKey, awsSecretAccessKey)))
-                .overrideConfiguration(o -> o.retryStrategy(b -> b.maxAttempts(5)))
+                .overrideConfiguration(o ->
+                        o.retryStrategy(b ->
+                                b.retryOnException(ProvisionedThroughputExceededException.class)
+                                        .retryOnException(LimitExceededException.class)
+                                        .maxAttempts(5)))
                 .build();
     }
 
